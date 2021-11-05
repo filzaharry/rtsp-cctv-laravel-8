@@ -67,7 +67,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <div class="fp-Video">
-                                    <div id="{{ $i->name }}" class="display"></div>
+                                    <div id="{{ $i->id_stream }}" class="display"></div>
                                 </div>
                                 <button id="playBtn" class="btn btn-primary">PLAY</button>
                             </div>
@@ -122,7 +122,7 @@
                 **/
                 function playClick() {
                     if (Browser.isSafari()) {
-                        Flashphoner.playFirstVideo(document.getElementById({!! json_encode($i->name) !!}), true, PRELOADER_URL).then(
+                        Flashphoner.playFirstVideo(document.getElementById({!! json_encode($i->id_stream) !!}), true, PRELOADER_URL).then(
                             function() {
                                 playStream();
                             });
@@ -135,7 +135,7 @@
                 function playStream() {
                     session.createStream({
                         name: {!! json_encode($i->rtsp) !!}, //specify the RTSP stream address
-                        display: document.getElementById({!! json_encode($i->name) !!}),
+                        display: document.getElementById({!! json_encode($i->id_stream) !!}),
                     }).play();
                 }
             </script>
