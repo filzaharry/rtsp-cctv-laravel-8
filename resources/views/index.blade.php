@@ -21,16 +21,19 @@
             width: 322px;
             height: 242px;
         }
+
         .display {
             width: 100%;
             height: 100%;
             display: inline-block;
         }
-        .display > video,
+
+        .display>video,
         object {
             width: 100%;
             height: 100%;
         }
+
     </style>
 </head>
 
@@ -38,7 +41,7 @@
     <div class="container mt-4">
 
         <div class="col-lg-12">
-            <h3>RSTP CCTV Project</h3>
+            {{-- <h3>RSTP CCTV Project</h3> --}}
             <br>
             <div class="col-lg-6">
                 <div class="">
@@ -51,8 +54,8 @@
                                         <option value="{{ $i->name }}">{{ $i->name }}</option>
                                     @endforeach
                                 </select>
-                                <button class="btn btn-success" style="margin-left: 10px;height: 38px;width: 200px;" type="submit"
-                                    value="submit">Submit</button>
+                                <button class="btn btn-success" style="margin-left: 10px;height: 38px;width: 200px;"
+                                    type="submit" value="submit">Submit</button>
                             </div>
                         </form>
                     </div>
@@ -66,10 +69,14 @@
                     <div class="col-lg-4">
                         <div class="card">
                             <div class="card-body">
+                                <div id="message">
+                                    <p id="loading">Loading ...</p>
+                                </div>
                                 <div class="fp-Video">
                                     <div id="{{ $i->id_stream }}" class="display"></div>
                                 </div>
-                                <button id="playBtn" class="btn btn-primary">PLAY</button>
+                                <div id="playBtn"></div>
+                                <div id="refresh"></div>
                             </div>
                         </div>
                     </div>
@@ -96,13 +103,48 @@
                 //Init Flashphoner API on page load
                 function init_api() {
                     Flashphoner.init({});
-                    //Connect to WCS server over websockets
+                    url = "wss://demo.flashphoner.com" //specify the address of your WCS
+                    // url = "wss://127.0.0.1:8000" //specify the address of your WCS
                     session = Flashphoner.createSession({
-                        urlServer: "wss://demo.flashphoner.com" //specify the address of your WCS
+                        urlServer: url
                     }).on(SESSION_STATUS.ESTABLISHED, function(session) {
-                        console.log("ESTABLISHED");
-                        console.log({!! json_encode($i->name) !!});
+
+                        console.log('established');
+
+                        let load = document.getElementById("loading");
+                        load.remove();
+
+                        let ready = document.getElementById("message");
+                        ready.innerHTML = "<p>Ready to Play</p>";
+
+                        let res = document.getElementById("playBtn");
+                        res.innerHTML = "<button class='btn btn-primary'>PLAY</button>";
+
+                    }).on(SESSION_STATUS.DISCONNECTED, function(session) {
+
+                        console.log("disconnected");
+
+                        let load = document.getElementById("loading");
+                        load.remove();
+
+                        let ready = document.getElementById("message");
+                        ready.innerHTML = "<p>Status Disconnected, Please Check Your Connection</p>";
+
+                    }).on(SESSION_STATUS.FAILED, function(session) {
+
+                        console.log("failed");
+
+                        let load = document.getElementById("loading");
+                        load.remove();
+
+                        let ready = document.getElementById("message");
+                        ready.innerHTML = "<p>Connecting Failed, Please Refresh the Page</p>";
+
                     });
+
+                    var refresh = document.getElementById("refresh");
+                    refresh.innerHTML =
+                        "<button class='btn btn-secondary' onClick='window.location.reload();'>Refresh Page</button>";
 
                     playBtn.onclick = playClick;
                 }
@@ -113,22 +155,27 @@
                         return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
                     },
                 }
-                /**
-                *
-                If browser is Safari, we launch the preloader before playing the stream.
-                Playback should start strictly upon a user's gesture (i.e. button click). This is limitation of mobile Safari browsers.
-                https://docs.flashphoner.com/display/WEBSDK2EN/Video+playback+on+mobile+devices
-                *
-                **/
+
                 function playClick() {
-                    if (Browser.isSafari()) {
-                        Flashphoner.playFirstVideo(document.getElementById({!! json_encode($i->id_stream) !!}), true, PRELOADER_URL).then(
-                            function() {
-                                playStream();
-                            });
-                    } else {
-                        playStream();
-                    }
+                    Flashphoner.playFirstVideo(document.getElementById({!! json_encode($i->id_stream) !!}), true, PRELOADER_URL).then(
+                        function() {
+                            var load = document.getElementById("message");
+                            load.innerHTML = "<p>Play First Video, Please Wait ...</p>";
+                            playStream();
+                        });
+                    // if (Browser.isSafari()) {
+                    //     Flashphoner.playFirstVideo(document.getElementById({!! json_encode($i->id_stream) !!}), true, PRELOADER_URL).then(
+                    //         function() {
+                    //             var load = document.getElementById("message");
+                    //             load.innerHTML = "<p>Play First Video, Please Wait ...</p>";
+                    //             playStream();
+                    //         });
+                    // } else {
+                    //     var load = document.getElementById("message");
+                    //     load.innerHTML = "<p>Play Video Again, Please Wait ...</p>";
+                    //     playStream();
+                    //     // load.remove();
+                    // }
                 }
 
                 //Playing stream
@@ -136,7 +183,16 @@
                     session.createStream({
                         name: {!! json_encode($i->rtsp) !!}, //specify the RTSP stream address
                         display: document.getElementById({!! json_encode($i->id_stream) !!}),
+                        cacheLocalResources: true
                     }).play();
+
+                    // console.log(session.createStream());
+                    // cari cara utk dapat nilai gambar muncul atau tidak muncul
+                    let res = document.getElementById("playBtn");
+                    res.remove();
+
+                    let run = 10;
+
                 }
             </script>
         @endforeach
